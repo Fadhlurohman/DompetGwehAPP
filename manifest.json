@@ -1,6 +1,6 @@
 {
-  "name": "SakuFlow - Personal Finance Tracker PWA",
-  "short_name": "SakuFlow",
+  "name": "ArusSaku - Personal Finance Tracker PWA",
+  "short_name": "ArusSaku",
   "description": "A beautiful PWA to track your personal incomes and expenses offline.",
   "start_url": "./index.html",
   "display": "standalone",

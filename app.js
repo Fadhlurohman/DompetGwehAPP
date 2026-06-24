@@ -143,7 +143,7 @@ if (installBtn) {
 }
 
 window.addEventListener('appinstalled', () => {
-  console.log('SakuFlow berhasil diinstal!');
+  console.log('ArusSaku berhasil diinstal!');
   if (installBtn) {
     installBtn.style.display = 'none';
   }
@@ -518,7 +518,7 @@ function exportBackupJson() {
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sakuflow_backup_${getOffsetDate(0)}.json`;
+  a.download = `arussaku_backup_${getOffsetDate(0)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -582,7 +582,7 @@ function exportTransactionsCsv() {
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sakuflow_transaksi_${getOffsetDate(0)}.csv`;
+  a.download = `arussaku_transaksi_${getOffsetDate(0)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

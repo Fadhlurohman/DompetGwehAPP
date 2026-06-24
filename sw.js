@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sakuflow-cache-v1';
+const CACHE_NAME = 'arussaku-cache-v1';
 const ASSETS = [
   './',
   './index.html',

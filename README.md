@@ -1,6 +1,6 @@
-# SakuFlow - Personal Finance Tracker PWA
+# ArusSaku - Personal Finance Tracker PWA
 
-**SakuFlow** adalah aplikasi pencatat keuangan pribadi modern yang berbasis *Progressive Web App* (PWA). Aplikasi ini dirancang agar dapat digunakan secara offline (*offline-first*), cepat, responsif di layar handphone maupun desktop, serta memiliki tampilan visual premium berbasis *glassmorphism* dengan mode terang (*light mode*) dan mode gelap (*dark mode*).
+**ArusSaku** adalah aplikasi pencatat keuangan pribadi modern yang berbasis *Progressive Web App* (PWA). Aplikasi ini dirancang agar dapat digunakan secara offline (*offline-first*), cepat, responsif di layar handphone maupun desktop, serta memiliki tampilan visual premium berbasis *glassmorphism* dengan mode terang (*light mode*) dan mode gelap (*dark mode*).
 
 ---
 
@@ -76,7 +76,7 @@ Aplikasi ini dirancang sebagai aplikasi web murni yang tidak membutuhkan kompila
 ### Di Handphone (Android - Google Chrome)
 1. Buka aplikasi browser Chrome di HP Anda dan ketikkan alamat server lokal (misalnya `http://192.168.x.x:8000/` atau alamat staging online jika di-deploy).
 2. Klik tombol **Instal Aplikasi** di bagian atas, atau buka menu titik tiga Chrome dan pilih **Tambahkan ke Layar Utama** (*Add to Home Screen*).
-3. Aplikasi SakuFlow akan muncul sebagai ikon aplikasi di menu HP Anda dan dapat diakses secara offline.
+3. Aplikasi ArusSaku akan muncul sebagai ikon aplikasi di menu HP Anda dan dapat diakses secara offline.
 
 ### Di Handphone (iOS - Safari)
 1. Buka Safari dan buka alamat aplikasi.
