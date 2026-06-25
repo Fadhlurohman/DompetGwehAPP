@@ -50,8 +50,7 @@ class MyApp extends StatelessWidget {
           background: lightBgColor,
           surface: lightCardColor,
           onPrimary: Colors.white,
-          onBackground: Color(0xFF0F2015), // Deep forest text
-          onSurface: Color(0xFF2D4236), // Deep green text
+          onSurface: Color(0xFF0F2015), // Deep forest text
         ),
         cardTheme: const CardTheme(
           color: lightCardColor,
@@ -82,8 +81,7 @@ class MyApp extends StatelessWidget {
           background: darkBgColor,
           surface: darkCardColor,
           onPrimary: Colors.white,
-          onBackground: Color(0xFFF2FAF6), // Light text
-          onSurface: Color(0xFFCBDCD0), // Light secondary text
+          onSurface: Color(0xFFF2FAF6), // Light text
         ),
         cardTheme: const CardTheme(
           color: darkCardColor,

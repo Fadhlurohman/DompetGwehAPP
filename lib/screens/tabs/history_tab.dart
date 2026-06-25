@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../providers/transaction_provider.dart';
 import '../../models/transaction_model.dart';
 import '../../utils/report_printer.dart' as printer;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../utils/formatters.dart';
 
 class HistoryTab extends StatefulWidget {
   const HistoryTab({super.key});
@@ -129,6 +129,208 @@ class _HistoryTabState extends State<HistoryTab> {
     }
   }
 
+  // Edit transaction dialog
+  Future<void> _showEditTransactionDialog(TransactionProvider provider, Transaction tx) async {
+    final formKey = GlobalKey<FormState>();
+    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+
+    String editType = tx.type;
+    String editCategory = tx.category;
+    final descCtrl = TextEditingController(text: tx.description);
+    final amountCtrl = TextEditingController(
+      text: currencyFormat.format(tx.amount).trim(),
+    );
+    DateTime editDate = tx.date;
+
+    // Build category list based on type
+    List<String> getCategories(String type) {
+      return type == 'income'
+          ? TransactionProvider.incomeCategories
+          : TransactionProvider.expenseCategories;
+    }
+
+    // Make sure category is valid for the current type
+    if (!getCategories(editType).contains(editCategory)) {
+      editCategory = getCategories(editType).first;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            const accentColor = Color(0xFF10B981);
+            final categories = getCategories(editType);
+
+            return AlertDialog(
+              title: const Text('Edit Transaksi', style: TextStyle(fontWeight: FontWeight.bold)),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Type toggle
+                        ToggleButtons(
+                          isSelected: [editType == 'income', editType == 'expense'],
+                          onPressed: (i) {
+                            setStateDialog(() {
+                              editType = i == 0 ? 'income' : 'expense';
+                              // Reset category if not valid for new type
+                              final cats = getCategories(editType);
+                              if (!cats.contains(editCategory)) {
+                                editCategory = cats.first;
+                              }
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          selectedColor: Colors.white,
+                          fillColor: editType == 'income' ? accentColor : const Color(0xFFF43F5E),
+                          children: const [
+                            Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('Pemasukan')),
+                            Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text('Pengeluaran')),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Category dropdown
+                        DropdownButtonFormField<String>(
+                          value: editCategory,
+                          decoration: InputDecoration(
+                            labelText: 'Kategori',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          ),
+                          items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                          onChanged: (val) => setStateDialog(() => editCategory = val ?? editCategory),
+                          validator: (val) => val == null || val.isEmpty ? 'Pilih kategori' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        // Description
+                        TextFormField(
+                          controller: descCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Deskripsi',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'Masukkan deskripsi' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        // Amount
+                        TextFormField(
+                          controller: amountCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            ThousandsSeparatorInputFormatter(),
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Nominal (Rp)',
+                            prefixText: 'Rp ',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) return 'Masukkan nominal';
+                            final cleaned = val.replaceAll('.', '').replaceAll(',', '');
+                            if (double.tryParse(cleaned) == null) return 'Nominal tidak valid';
+                            if ((double.tryParse(cleaned) ?? 0) <= 0) return 'Nominal harus > 0';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // Date picker
+                        InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: editDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: isDark
+                                        ? const ColorScheme.dark(primary: Color(0xFF10B981), onPrimary: Colors.white)
+                                        : const ColorScheme.light(primary: Color(0xFF10B981), onPrimary: Colors.white),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) setStateDialog(() => editDate = picked);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: isDark ? Colors.grey[600]! : Colors.grey[400]!),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today, color: Color(0xFF10B981), size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  DateFormat('dd MMM yyyy', 'id_ID').format(editDate),
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    final cleanedAmount = amountCtrl.text.replaceAll('.', '').replaceAll(',', '');
+                    final updatedTx = Transaction(
+                      id: tx.id,
+                      type: editType,
+                      category: editCategory,
+                      description: descCtrl.text.trim(),
+                      amount: double.parse(cleanedAmount),
+                      date: editDate,
+                    );
+                    Navigator.of(context).pop();
+                    await provider.updateTransaction(updatedTx);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Transaksi berhasil diperbarui.'),
+                          backgroundColor: Color(0xFF10B981),
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    descCtrl.dispose();
+    amountCtrl.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TransactionProvider>(context);
@@ -175,7 +377,7 @@ class _HistoryTabState extends State<HistoryTab> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 768;
 
-    return Container(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,15 +505,16 @@ class _HistoryTabState extends State<HistoryTab> {
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     value: _selectedType,
+                                    isExpanded: true,
                                     decoration: InputDecoration(
                                       labelText: 'Tipe',
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
                                     ),
                                     items: const [
-                                      DropdownMenuItem(value: 'all', child: Text('Semua')),
-                                      DropdownMenuItem(value: 'income', child: Text('Masuk')),
-                                      DropdownMenuItem(value: 'expense', child: Text('Keluar')),
+                                      DropdownMenuItem(value: 'all', child: Text('Semua', overflow: TextOverflow.ellipsis)),
+                                      DropdownMenuItem(value: 'income', child: Text('Masuk', overflow: TextOverflow.ellipsis)),
+                                      DropdownMenuItem(value: 'expense', child: Text('Keluar', overflow: TextOverflow.ellipsis)),
                                     ],
                                     onChanged: (val) {
                                       setState(() {
@@ -324,14 +527,15 @@ class _HistoryTabState extends State<HistoryTab> {
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     value: _selectedCategory,
+                                    isExpanded: true,
                                     decoration: InputDecoration(
                                       labelText: 'Kategori',
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
                                     ),
                                     items: [
-                                      const DropdownMenuItem(value: 'all', child: Text('Semua')),
-                                      ...allCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                                      const DropdownMenuItem(value: 'all', child: Text('Semua', overflow: TextOverflow.ellipsis)),
+                                      ...allCategories.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))),
                                     ],
                                     onChanged: (val) {
                                       setState(() {
@@ -385,38 +589,41 @@ class _HistoryTabState extends State<HistoryTab> {
                             ),
                           ],
                         )
-                      : Column(
-                          children: [
-                            DropdownButtonFormField<String>(
-                              value: _selectedMonth,
-                              decoration: InputDecoration(
-                                labelText: 'Bulan (Tren)',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      : SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              DropdownButtonFormField<String>(
+                                value: _selectedMonth,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Bulan (Tren)',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                                ),
+                                items: [
+                                  const DropdownMenuItem(value: 'all', child: Text('Semua Bulan')),
+                                  ...uniqueMonths.map((m) {
+                                    final parts = m.split('-');
+                                    final monthInt = int.parse(parts[1]);
+                                    final yearStr = parts[0];
+                                    final monthNames = [
+                                      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                                      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                                    ];
+                                    final label = "${monthNames[monthInt - 1]} $yearStr";
+                                    return DropdownMenuItem(value: m, child: Text(label));
+                                  }),
+                                ],
+                                onChanged: (val) {
+                                  setState(() {
+                                    _selectedMonth = val ?? 'all';
+                                  });
+                                },
                               ),
-                              items: [
-                                const DropdownMenuItem(value: 'all', child: Text('Semua Bulan')),
-                                ...uniqueMonths.map((m) {
-                                  final parts = m.split('-');
-                                  final monthInt = int.parse(parts[1]);
-                                  final yearStr = parts[0];
-                                  final monthNames = [
-                                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-                                  ];
-                                  final label = "${monthNames[monthInt - 1]} $yearStr";
-                                  return DropdownMenuItem(value: m, child: Text(label));
-                                }),
-                              ],
-                              onChanged: (val) {
-                                setState(() {
-                                  _selectedMonth = val ?? 'all';
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            _buildDateRangeSelector(context),
-                          ],
+                              const SizedBox(height: 12),
+                              _buildDateRangeSelector(context),
+                            ],
+                          ),
                         ),
                 ],
               ),
@@ -452,14 +659,6 @@ class _HistoryTabState extends State<HistoryTab> {
                                 icon: const Icon(Icons.print, size: 18, color: Color(0xFF10B981)),
                                 onPressed: () {
                                   printer.printReport(filteredTransactions);
-                                  if (!kIsWeb) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Laporan teks berhasil disalin ke clipboard!'),
-                                        backgroundColor: Color(0xFF10B981),
-                                      ),
-                                    );
-                                  }
                                 },
                                 tooltip: 'Cetak Laporan',
                               ),
@@ -537,7 +736,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   text,
                   style: TextStyle(
                     fontSize: 13,
-                    color: hasDate ? Theme.of(context).colorScheme.onBackground : Colors.grey,
+                    color: hasDate ? Theme.of(context).colorScheme.onSurface : Colors.grey,
                     fontWeight: hasDate ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -667,10 +866,20 @@ class _HistoryTabState extends State<HistoryTab> {
                         ),
                       ),
                       DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Color(0xFFF43F5E), size: 20),
-                          onPressed: () => _deleteTransaction(provider, tx),
-                          tooltip: 'Hapus Transaksi',
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: Color(0xFF10B981), size: 20),
+                              onPressed: () => _showEditTransactionDialog(provider, tx),
+                              tooltip: 'Edit Transaksi',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Color(0xFFF43F5E), size: 20),
+                              onPressed: () => _deleteTransaction(provider, tx),
+                              tooltip: 'Hapus Transaksi',
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -702,105 +911,101 @@ class _HistoryTabState extends State<HistoryTab> {
         itemBuilder: (context, index) {
           final tx = list[index];
           final isIncome = tx.type == 'income';
-          
-          return Dismissible(
-            key: Key(tx.id),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              color: const Color(0xFFF43F5E),
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20.0),
-              child: const Icon(Icons.delete, color: Colors.white),
-            ),
-            confirmDismiss: (dir) async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text('Hapus Transaksi'),
-                    content: Text('Apakah Anda yakin ingin menghapus transaksi "${tx.description}"?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          final accentColor = isIncome ? const Color(0xFF10B981) : const Color(0xFFF43F5E);
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Leading icon
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: accentColor.withOpacity(0.12),
+                  child: Icon(
+                    isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                    color: accentColor,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Middle: description, date, category
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Row 1: description + nominal
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              tx.description,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${isIncome ? '+' : '-'} ${_formatAmount(tx.amount).replaceFirst('Rp ', '').trim()}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: accentColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF43F5E)),
-                        child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+                      const SizedBox(height: 4),
+                      // Row 2: date + category chip
+                      Row(
+                        children: [
+                          Text(
+                            _dateFormat.format(tx.date),
+                            style: const TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              tx.category,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  );
-                },
-              );
-              return confirm;
-            },
-            onDismissed: (dir) {
-              provider.deleteTransaction(tx.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Transaksi "${tx.description}" dihapus'),
-                  backgroundColor: const Color(0xFF10B981),
+                  ),
                 ),
-              );
-            },
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isIncome 
-                    ? const Color(0xFF10B981).withOpacity(0.1) 
-                    : const Color(0xFFF43F5E).withOpacity(0.1),
-                child: Icon(
-                  isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: isIncome ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
-                  size: 18,
+                // Trailing: action buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined, color: const Color(0xFF10B981).withOpacity(0.85), size: 19),
+                      onPressed: () => _showEditTransactionDialog(provider, tx),
+                      tooltip: 'Edit',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: const Color(0xFFF43F5E).withOpacity(0.85), size: 19),
+                      onPressed: () => _deleteTransaction(provider, tx),
+                      tooltip: 'Hapus',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                    ),
+                  ],
                 ),
-              ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tx.description,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    "${isIncome ? '+' : '-'} ${_formatAmount(tx.amount).replaceFirst('Rp ', '').trim()}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isIncome ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _dateFormat.format(tx.date),
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isIncome 
-                          ? const Color(0xFF10B981).withOpacity(0.08) 
-                          : const Color(0xFFF43F5E).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      tx.category,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: isIncome ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           );
         },

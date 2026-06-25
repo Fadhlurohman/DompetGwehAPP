@@ -9,6 +9,7 @@ class TransactionProvider with ChangeNotifier {
   double _initialBalance = 0.0;
   bool _isInitialBalanceSet = false;
   ThemeMode _themeMode = ThemeMode.light;
+  Map<String, double> _categoryBudgets = {};
 
   // Categories definition
   static const List<String> incomeCategories = ['Gaji', 'Lain-lain'];
@@ -25,6 +26,7 @@ class TransactionProvider with ChangeNotifier {
   double get initialBalance => _initialBalance;
   bool get isInitialBalanceSet => _isInitialBalanceSet;
   ThemeMode get themeMode => _themeMode;
+  Map<String, double> get categoryBudgets => _categoryBudgets;
 
   TransactionProvider() {
     loadState();
@@ -36,6 +38,17 @@ class TransactionProvider with ChangeNotifier {
     
     // Load budget limit
     _budgetLimit = prefs.getDouble('budget_limit') ?? 0.0;
+
+    // Load category budgets
+    final catBudgetsJson = prefs.getString('category_budgets');
+    if (catBudgetsJson != null) {
+      try {
+        final decoded = jsonDecode(catBudgetsJson) as Map<String, dynamic>;
+        _categoryBudgets = decoded.map((k, v) => MapEntry(k, (v as num).toDouble()));
+      } catch (_) {
+        _categoryBudgets = {};
+      }
+    }
 
     // Load initial balance
     _initialBalance = prefs.getDouble('initial_balance') ?? 0.0;
@@ -94,6 +107,16 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Update an existing transaction
+  Future<void> updateTransaction(Transaction updatedTx) async {
+    final index = _transactions.indexWhere((tx) => tx.id == updatedTx.id);
+    if (index != -1) {
+      _transactions[index] = updatedTx;
+      await saveTransactions();
+      notifyListeners();
+    }
+  }
+
   // Set monthly budget limit
   Future<void> setBudgetLimit(double limit) async {
     _budgetLimit = limit;
@@ -108,6 +131,26 @@ class TransactionProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('budget_limit', 0.0);
     notifyListeners();
+  }
+
+  // Set budget for a specific expense category
+  Future<void> setCategoryBudget(String category, double limit) async {
+    _categoryBudgets[category] = limit;
+    await _saveCategoryBudgets();
+    notifyListeners();
+  }
+
+  // Reset budget for a specific category
+  Future<void> resetCategoryBudget(String category) async {
+    _categoryBudgets.remove(category);
+    await _saveCategoryBudgets();
+    notifyListeners();
+  }
+
+  // Save category budgets to SharedPreferences
+  Future<void> _saveCategoryBudgets() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('category_budgets', jsonEncode(_categoryBudgets));
   }
 
   // Set initial balance

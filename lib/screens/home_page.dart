@@ -4,6 +4,7 @@ import '../providers/transaction_provider.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/add_transaction_tab.dart';
 import 'tabs/history_tab.dart';
+import 'tabs/about_tab.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,6 +33,7 @@ class _HomePageState extends State<HomePage> {
         });
       }),
       const HistoryTab(),
+      const AboutTab(),
     ];
 
     // Gradient styling for the Brand text (Green to Red matching the slogan)
@@ -143,6 +145,11 @@ class _HomePageState extends State<HomePage> {
                         selectedIcon: Icon(Icons.history),
                         label: Text('Riwayat'),
                       ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.info_outline),
+                        selectedIcon: Icon(Icons.info),
+                        label: Text('Tentang'),
+                      ),
                     ],
                   ),
                   const VerticalDivider(width: 1, thickness: 1),
@@ -190,6 +197,11 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.history_outlined),
                   activeIcon: Icon(Icons.history),
                   label: 'Riwayat',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.info_outline),
+                  activeIcon: Icon(Icons.info),
+                  label: 'Tentang',
                 ),
               ],
             ),

@@ -434,6 +434,10 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           const SizedBox(height: 20),
 
+          // Category Budget Section
+          _buildCategoryBudgetSection(context, provider, transactions, isDark),
+          const SizedBox(height: 20),
+
           // Charts Section
           isDesktop
               ? Row(
@@ -451,6 +455,156 @@ class _DashboardTabState extends State<DashboardTab> {
                     _buildBarChartCard(transactions, isDark),
                   ],
                 ),
+        ],
+      ),
+    );
+  }
+
+  // Category Budget Section
+  Widget _buildCategoryBudgetSection(
+    BuildContext context,
+    TransactionProvider provider,
+    List<Transaction> transactions,
+    bool isDark,
+  ) {
+    final categories = TransactionProvider.expenseCategories;
+    final now = DateTime.now();
+    final categoryBudgets = provider.categoryBudgets;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.pie_chart_outline, color: Color(0xFF10B981), size: 18),
+                const SizedBox(width: 8),
+                const Text('Anggaran Per Kategori', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Pengeluaran bulan ini per kategori',
+              style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+            ),
+            const SizedBox(height: 14),
+            ...categories.map((cat) {
+              final spent = transactions
+                  .where((tx) =>
+                      tx.type == 'expense' &&
+                      tx.category == cat &&
+                      tx.date.year == now.year &&
+                      tx.date.month == now.month)
+                  .fold(0.0, (sum, tx) => sum + tx.amount);
+              final limit = categoryBudgets[cat] ?? 0.0;
+              final percent = (limit > 0) ? (spent / limit * 100).clamp(0.0, 100.0) : 0.0;
+
+              Color barColor = const Color(0xFF10B981);
+              if (percent >= 100) { barColor = const Color(0xFFF43F5E); }
+              else if (percent >= 75) { barColor = const Color(0xFFF59E0B); }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(cat, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Row(
+                          children: [
+                            if (limit > 0)
+                              Text(
+                                '${_isObscured ? "••••" : _formatAmount(spent)} / ${_isObscured ? "••••" : _formatAmount(limit)}',
+                                style: TextStyle(fontSize: 11, color: barColor, fontWeight: FontWeight.bold),
+                              )
+                            else
+                              Text('Belum diatur', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () => _showCategoryBudgetDialog(context, provider, cat, limit),
+                              child: Icon(
+                                limit > 0 ? Icons.edit_outlined : Icons.add_circle_outline,
+                                size: 16,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                            if (limit > 0) ...[
+                              const SizedBox(width: 2),
+                              GestureDetector(
+                                onTap: () => provider.resetCategoryBudget(cat),
+                                child: const Icon(Icons.close, size: 15, color: Color(0xFFF43F5E)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: limit > 0 ? percent / 100 : 0,
+                        minHeight: 6,
+                        backgroundColor: isDark ? Colors.white12 : Colors.black12,
+                        valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Dialog to set budget for a category
+  void _showCategoryBudgetDialog(
+    BuildContext context,
+    TransactionProvider provider,
+    String category,
+    double currentLimit,
+  ) {
+    final ctrl = TextEditingController(
+      text: currentLimit > 0 ? NumberFormat.decimalPattern('id').format(currentLimit) : '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Anggaran: $category', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          inputFormatters: [ThousandsSeparatorInputFormatter()],
+          decoration: InputDecoration(
+            prefixText: 'Rp ',
+            hintText: 'Contoh: 500.000',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final amount = double.tryParse(ctrl.text.replaceAll('.', '')) ?? 0;
+              if (amount > 0) provider.setCategoryBudget(category, amount);
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Simpan'),
+          ),
         ],
       ),
     );

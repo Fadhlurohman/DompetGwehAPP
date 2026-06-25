@@ -23,6 +23,10 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
   final _descController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
+  bool get _hasUnsavedData =>
+      _amountController.text.trim().isNotEmpty ||
+      _descController.text.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -152,9 +156,40 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
         ? TransactionProvider.incomeCategories 
         : TransactionProvider.expenseCategories;
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        if (!_hasUnsavedData) {
+          Navigator.of(context).maybePop();
+          return;
+        }
+        final leave = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Tinggalkan Form?'),
+            content: const Text('Data yang sudah diisi akan hilang. Yakin ingin keluar?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF43F5E),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Keluar'),
+              ),
+            ],
+          ),
+        );
+        if (leave == true && context.mounted) Navigator.of(context).maybePop();
+      },
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
           child: Card(
@@ -387,6 +422,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
