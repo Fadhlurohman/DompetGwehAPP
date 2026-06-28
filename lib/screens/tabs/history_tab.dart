@@ -156,10 +156,10 @@ class _HistoryTabState extends State<HistoryTab> {
 
     await showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
+          builder: (ctx, setStateDialog) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
             const accentColor = Color(0xFF10B981);
             final categories = getCategories(editType);
 
@@ -183,7 +183,7 @@ class _HistoryTabState extends State<HistoryTab> {
                               // Reset category if not valid for new type
                               final cats = getCategories(editType);
                               if (!cats.contains(editCategory)) {
-                                editCategory = cats.first;
+                                  editCategory = cats.first;
                               }
                             });
                           },
@@ -246,7 +246,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         InkWell(
                           onTap: () async {
                             final picked = await showDatePicker(
-                              context: context,
+                              context: ctx,
                               initialDate: editDate,
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2030),
@@ -288,11 +288,12 @@ class _HistoryTabState extends State<HistoryTab> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text('Batal', style: TextStyle(color: Colors.grey)),
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    FocusManager.instance.primaryFocus?.unfocus();
                     if (!formKey.currentState!.validate()) return;
                     final cleanedAmount = amountCtrl.text.replaceAll('.', '').replaceAll(',', '');
                     final updatedTx = Transaction(
@@ -303,20 +304,20 @@ class _HistoryTabState extends State<HistoryTab> {
                       amount: double.parse(cleanedAmount),
                       date: editDate,
                     );
-                    Navigator.of(context).pop();
+                    Navigator.of(ctx).pop();
                     // Confirmation before saving
                     final confirmed = await showDialog<bool>(
                       context: context,
-                      builder: (ctx) => AlertDialog(
+                      builder: (confirmCtx) => AlertDialog(
                         title: const Text('Konfirmasi Edit'),
                         content: const Text('Simpan perubahan transaksi ini?'),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
+                            onPressed: () => Navigator.pop(confirmCtx, false),
                             child: const Text('Batal', style: TextStyle(color: Colors.grey)),
                           ),
                           ElevatedButton(
-                            onPressed: () => Navigator.pop(ctx, true),
+                            onPressed: () => Navigator.pop(confirmCtx, true),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               foregroundColor: Colors.white,

@@ -23,11 +23,7 @@ class _HomePageState extends State<HomePage> {
 
     final tabs = [
       const DashboardTab(),
-      AddTransactionTab(onSuccess: () {
-        setState(() {
-          _currentIndex = 0;
-        });
-      }),
+      const AddTransactionTab(),
       const HistoryTab(),
       const AboutTab(),
     ];

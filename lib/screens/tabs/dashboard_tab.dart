@@ -38,7 +38,7 @@ class _DashboardTabState extends State<DashboardTab> {
     );
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return AlertDialog(
           title: const Text('Atur Saldo Awal'),
           content: Column(
@@ -63,14 +63,14 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               child: const Text('Batal', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () async {
                 final text = controller.text.replaceAll('.', '');
                 final amount = double.tryParse(text) ?? 0.0;
-                Navigator.of(context).pop();
+                Navigator.of(dialogCtx).pop();
                 // Confirmation dialog
                 final confirmed = await showDialog<bool>(
                   context: context,
@@ -121,7 +121,7 @@ class _DashboardTabState extends State<DashboardTab> {
   void _showResetBalanceConfirmDialog(BuildContext context, TransactionProvider provider) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return AlertDialog(
           title: const Text('Reset Saldo & Transaksi'),
           content: const Text(
@@ -129,13 +129,13 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               child: const Text('Batal', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
                 provider.resetBalance();
-                Navigator.of(context).pop();
+                Navigator.of(dialogCtx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Saldo awal dan semua transaksi berhasil di-reset.'),
@@ -164,7 +164,7 @@ class _DashboardTabState extends State<DashboardTab> {
     );
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return AlertDialog(
           title: const Text('Atur Batas Anggaran Bulanan'),
           content: Column(
@@ -190,14 +190,14 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               child: const Text('Batal', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () async {
                 final text = controller.text.replaceAll('.', '');
                 final limit = double.tryParse(text) ?? 0.0;
-                Navigator.of(context).pop();
+                Navigator.of(dialogCtx).pop();
                 // Confirmation dialog
                 final confirmed = await showDialog<bool>(
                   context: context,
@@ -248,19 +248,19 @@ class _DashboardTabState extends State<DashboardTab> {
   void _showResetBudgetConfirmDialog(BuildContext context, TransactionProvider provider) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return AlertDialog(
           title: const Text('Reset Batas Anggaran'),
           content: const Text('Apakah Anda yakin ingin mereset batas anggaran bulanan menjadi Rp 0?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               child: const Text('Batal', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () {
                 provider.resetBudgetLimit();
-                Navigator.of(context).pop();
+                Navigator.of(dialogCtx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Batas anggaran bulanan berhasil di-reset.'),
@@ -279,6 +279,7 @@ class _DashboardTabState extends State<DashboardTab> {
       },
     );
   }
+
 
   // Dialog to set budget for a category (with confirm)
   void _showCategoryBudgetDialog(
@@ -406,6 +407,7 @@ class _DashboardTabState extends State<DashboardTab> {
     Widget? subtitle,
     VoidCallback? onEdit,
     VoidCallback? onReset,
+    bool isCompact = false,
   }) {
     return Card(
       child: Container(
@@ -415,7 +417,10 @@ class _DashboardTabState extends State<DashboardTab> {
             left: BorderSide(color: indicatorColor, width: 4.5),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 12 : 16,
+          vertical: isCompact ? 10 : 14,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -424,8 +429,8 @@ class _DashboardTabState extends State<DashboardTab> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: isCompact ? 10 : 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                     color: Colors.grey,
@@ -464,7 +469,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               _isObscured
                   ? (textPrefix.isNotEmpty ? "$textPrefix ••••••" : "Rp ••••••")
@@ -472,7 +477,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       ? "$textPrefix ${_formatAmount(amount).replaceFirst('Rp', '').trim()}"
                       : _formatAmount(amount)),
               style: TextStyle(
-                fontSize: 22,
+                fontSize: title == 'TOTAL SALDO' ? 28 : (isCompact ? 16 : 22),
                 fontWeight: FontWeight.w800,
                 color: title == 'TOTAL SALDO'
                   ? (isDark ? Colors.white : const Color(0xFF0F2015))
@@ -480,7 +485,7 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               subtitle,
             ],
           ],
@@ -1040,7 +1045,7 @@ class _DashboardTabState extends State<DashboardTab> {
         : 'Mulai catat transaksi bulan ini untuk Wrapped penuh bulan depan!';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1057,9 +1062,13 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
               ),
               IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
                 icon: Icon(
                   _isObscured ? Icons.visibility_off : Icons.visibility,
                   color: const Color(0xFF10B981),
+                  size: 20,
                 ),
                 onPressed: () {
                   setState(() {
@@ -1070,7 +1079,7 @@ class _DashboardTabState extends State<DashboardTab> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Financial Wrapped Banner (Only shown during the first 3 days of the month)
           if (now.day <= 3) ...[
@@ -1162,10 +1171,10 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
           ],
 
-          // Summary Cards (mobile: column)
+          // Summary Cards
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1192,17 +1201,39 @@ class _DashboardTabState extends State<DashboardTab> {
                     ? () => _showResetBalanceConfirmDialog(context, provider)
                     : null,
               ),
-              const SizedBox(height: 12),
-              _buildSummaryCard('PEMASUKAN', totalIncome, const Color(0xFF10B981), isDark, textPrefix: '+'),
-              const SizedBox(height: 12),
-              _buildSummaryCard('PENGELUARAN', totalExpense, const Color(0xFFF43F5E), isDark, textPrefix: '-'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'PEMASUKAN',
+                      totalIncome,
+                      const Color(0xFF10B981),
+                      isDark,
+                      textPrefix: '+',
+                      isCompact: true,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'PENGELUARAN',
+                      totalExpense,
+                      const Color(0xFFF43F5E),
+                      isDark,
+                      textPrefix: '-',
+                      isCompact: true,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
 
           // Budget Limit Card (card-style like Total Saldo)
           _buildBudgetCard(context, provider, currentMonthExpenses, isDark),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Category Budget Section (hidden by default, revealed by toggle)
           AnimatedSwitcher(
@@ -1218,13 +1249,13 @@ class _DashboardTabState extends State<DashboardTab> {
                   )
                 : const SizedBox.shrink(key: ValueKey('catBudgetsHidden')),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Charts
           _buildDonutChartCard(transactions, isDark),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _buildBarChartCard(transactions, isDark),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
         ],
       ),
     );

@@ -85,6 +85,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
 
   // Handle Form Submit
   void _submitForm() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<TransactionProvider>(context, listen: false);
@@ -150,7 +151,10 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!mounted) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (confirmed != true) return;
 
     final newTx = Transaction(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -218,7 +222,9 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
         ? TransactionProvider.incomeCategories 
         : TransactionProvider.expenseCategories;
 
-    return PopScope(
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
@@ -487,6 +493,7 @@ class _AddTransactionTabState extends State<AddTransactionTab> {
         ),
         ),
       ),
+    ),
     );
   }
 }
