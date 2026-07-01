@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/images/logo.png" alt="S-AKU Logo" width="120" />
+  <img src="assets/images/logo_square.png" alt="S-AKU Logo" width="120" />
 </p>
 
 <h1 align="center">S-AKU 💸</h1>
